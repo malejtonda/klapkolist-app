@@ -48,7 +48,7 @@
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation;background:var(--bar)}
 html,body{height:100%;max-width:100%;overflow:hidden;overscroll-behavior:none}
 body{
   font-family:var(--mono);font-size:var(--fs-body);line-height:1.5;
@@ -111,10 +111,10 @@ button{background:none;border:0;cursor:pointer;touch-action:manipulation;-webkit
 .scroll{
   position:relative;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-  padding:0 var(--gutter) calc(104px + var(--safe-b));
+  padding:0 var(--gutter) 24px;
 }
 /* on the shooting day, leave room so the last záběr can scroll up to the top */
-#list{padding-bottom:max(calc(104px + var(--safe-b)),55vh)}
+#list{padding-bottom:55vh}
 .section-label{padding:22px 0 10px}
 /* the diagonal grain only shows on an empty screen */
 .scroll.grain{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 2px,transparent 2px 26px)}
@@ -241,8 +241,8 @@ button{background:none;border:0;cursor:pointer;touch-action:manipulation;-webkit
 
 /* ===== Dock (bottom bar) ===== */
 .dock{
-  position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bar);
-  display:flex;gap:10px;padding:12px var(--gutter) calc(12px + var(--safe-b));
+  position:relative;z-index:30;flex-shrink:0;background:var(--bar);
+  display:flex;gap:10px;padding:12px var(--gutter);
 }
 .btn{
   min-height:48px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:10px;
@@ -311,11 +311,11 @@ textarea.mono:focus{outline:none;background:var(--ctl)}
 .kbbar .lbl{margin-right:auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kb-hide{height:44px;padding:0 12px;display:flex;align-items:center;gap:10px;font-size:var(--fs-micro);letter-spacing:var(--track);text-transform:uppercase;color:var(--ink)}
 .kb-hide:active{color:var(--ink-50)}
-body.kb-open .dock{visibility:hidden}
+body.kb-open .dock{display:none}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
-<style>:root{padding-top:env(safe-area-inset-top,0px);background:#171717}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:#171717}</style>
 </head>
 <body>
 <div id="app"></div>
