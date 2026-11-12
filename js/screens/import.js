@@ -11,10 +11,11 @@ export function screenImport(projectId, ndId){
   const found = findDay(projectId, ndId);
   if (!found){ goBack(); return; }
   const { nd } = found;
+  if (nd.finished){ goBack(); return; }
 
   const content = scrollArea(null);
-  content.appendChild(el('p', { className: 'hint' }, 'Zkopíruj a vlož Google Sheets tabulku s denními dispozicemi.'));
-  const ta = el('textarea', { className: 'mono', id: 'import-ta', 'aria-label': 'Tabulka k importu', placeholder: 'OBRAZ\tZÁBĚR\n2\t2\n2\t3\n5\t8\n5\t9\n3\t4' });
+  content.appendChild(el('p', { className: 'hint' }, 'Zkopírujte v Google Sheets tabulku dne (stačí sloupce OB a ZA) a vložte ji sem.'));
+  const ta = el('textarea', { className: 'mono', id: 'import-ta', 'aria-label': 'Tabulka k importu', placeholder: 'OB\tZA\n2\t2\n2\t3\n5\t8\n5\t9\n3\t4' });
   const preview = el('div');
   const updatePreview = () => preview.replaceChildren(...(ta.value.trim() ? importPreview(parseImport(ta.value)) : []));
   let timer = 0;
@@ -29,7 +30,7 @@ export function screenImport(projectId, ndId){
       showToast(n ? `Vloženo · ${n} řádků` : 'Vloženo, ale bez řádků s čísly obrazu a záběru');
     }catch{
       ta.focus();
-      showToast('Telefon nedovolil vložit přímo — podržte prst v poli a zvolte Vložit', 4000);
+      showToast('Telefon nedovolil vložit přímo — podržte prst v poli a zvolte Vložit', { ms: 4000 });
     }
   }}, 'Vložit');
   content.append(el('div', { className: 'paste-wrap' }, ta, pasteBtn), preview);
@@ -50,8 +51,9 @@ export function screenImport(projectId, ndId){
 function importPreview(rows){
   if (!rows.length) return [el('p', { className: 'hint' }, 'Žádné rozpoznané řádky. První dva sloupce musí být čísla obrazu a záběru.')];
   const table = el('table', { className: 'preview-table tnum' },
-    el('tr', null, ['OBRAZ', 'ZÁBĚR', 'TAKE'].map(h => el('th', null, h))),
-    rows.slice(0, 12).map(r => el('tr', null, el('td', null, '' + r.obraz), el('td', null, '' + r.zaber), el('td', null, '' + (r.take || '–')))));
+    el('tr', null, ['OB', 'ZA', 'TA'].map(h => el('th', null, h))),
+    rows.slice(0, 12).map(r => el('tr', null,
+      el('td', null, r.obraz == null ? '' : '' + r.obraz), el('td', null, r.obraz == null ? '' : `${r.zaber}${r.suffix}`), el('td', null, r.take ? '' + r.take : r.hasTake ? 'pozn.' : '–'))));
   return [el('div', { className: 'table-wrap' },
     el('div', { className: 'label', style: 'margin-bottom:6px' }, `${rows.length} řádků${rows.length > 12 ? ' · zobrazeno 12' : ''}`),
     table)];

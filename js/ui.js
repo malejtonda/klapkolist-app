@@ -1,7 +1,8 @@
 // Screen furniture shared by every screen: the page frame, header bar, dialogs, ⋯ menu, list rows.
-import { el, icon, iconBtn, blurIfInside } from './dom.js';
+import { el, icon, iconBtn, blurIfInside, showToast } from './dom.js';
 import { syncKbBar } from './keyboard.js';
 import { goBack } from './nav.js';
+import { syncStatus, syncNow, onSyncStatus } from './sync.js';
 
 export function renderApp(...nodes){
   const app = document.getElementById('app');
@@ -45,8 +46,30 @@ export function itemRow({ name, side, onOpen, onRename, onDelete }){
     ]) }, icon('dots')));
 }
 
+// ===== Drive indicator =====
+const SYNC = {
+  off:     { icon: 'cloudOff', label: 'Google Drive není připojený', text: 'Připojte ho v Nastavení.' },
+  ok:      { icon: 'cloudOk',  label: 'Vše je na Google Drive', text: '' },
+  pending: { icon: 'cloudUp',  label: 'Čeká na odeslání na Drive', text: 'Odešle se samo za chvíli.' },
+  offline: { icon: 'cloudUp',  label: 'Bez signálu — odešle se, až bude', text: 'Data jsou zatím uložená v telefonu.' },
+  error:   { icon: 'cloudOff', label: 'Odeslání na Drive se nepovedlo', text: 'Zkusí se to znovu samo.' }
+};
+// The small cloud in the header: where the data is right now. Tap it for details.
+export function syncButton(){
+  const st = syncStatus(), info = SYNC[st.state];
+  const explain = () => {
+    showToast([info.label, st.error || info.text].filter(Boolean).join(' · '), { ms: 3500,
+      action: st.state === 'off' || st.state === 'ok' ? null : { label: 'Odeslat teď', run: syncNow } });
+  };
+  const b = iconBtn(info.icon, info.label, explain);
+  b.id = 'sync-btn';
+  b.classList.add('sync', 'sync-' + st.state);
+  return b;
+}
+onSyncStatus(() => document.getElementById('sync-btn')?.replaceWith(syncButton()));
+
 // ===== ⋯ menu =====
-function openMenu(anchor, items){
+export function openMenu(anchor, items){
   document.querySelector('.menu-overlay')?.remove();
   const overlay = el('div', { className: 'menu-overlay' });
   const menu = el('div', { className: 'menu', role: 'menu' },

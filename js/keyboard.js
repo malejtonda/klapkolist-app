@@ -1,5 +1,6 @@
 // The on-screen keyboard: keep the field you tap in the upper part of the screen, so the keyboard
-// never has to push the page, and give the keyboard a bar with "next" and "hide" buttons.
+// never has to push the page, and give the keyboard a bar with quick suggestions for the field,
+// and "next" and "hide" buttons.
 //
 // Fields that belong together (a take's notes, a záběr's numbers) sit in one [data-fieldgroup];
 // the ones Enter / "Další" walks through carry data-seq. Enter on the last one fires
@@ -10,6 +11,25 @@ import { el, icon } from './dom.js';
 const BAR_H = 44;
 const isField = n => n && (n.matches('textarea') || (n.matches('input') && !['button', 'checkbox', 'radio', 'file'].includes(n.type)));
 const bar = () => document.getElementById('kbbar');
+
+// Earlier entries offered as one-tap chips on the keyboard bar while a field has focus.
+// suggestField(input, { items: query => [text], onPick: text => … })
+const suggesters = new WeakMap();
+export function suggestField(input, suggester){ suggesters.set(input, suggester); }
+function showSuggestions(inp){
+  const s = suggesters.get(inp);
+  const chips = (s ? s.items(inp.value) : []).map(x => {
+    const b = el('button', { className: 'kb-chip', 'aria-label': `Doplnit: ${x}` }, x);
+    // pointerdown + preventDefault: the field keeps focus, so the keyboard stays up
+    b.addEventListener('pointerdown', e => e.preventDefault());
+    b.addEventListener('click', () => { s.onPick(x); if (document.contains(inp)) showSuggestions(inp); });
+    return b;
+  });
+  const row = document.getElementById('kb-sug');
+  row.replaceChildren(...chips);
+  row.scrollLeft = 0;
+  bar().classList.toggle('has-sug', chips.length > 0);
+}
 
 // Where the keyboard's top edge will be. Once it is open, visualViewport says exactly;
 // before it opens, assume an iPhone keyboard with the suggestion row (about 42 % of the screen).
@@ -23,8 +43,7 @@ function keepFieldVisible(inp){
   if (!sc) return;
   const label = inp.closest('.field')?.querySelector('label');
   const top = (label || inp).getBoundingClientRect().top;
-  const sug = inp.parentElement.querySelector('.ac-list.show');   // leave room for its suggestions too
-  const bottom = (sug || inp).getBoundingClientRect().bottom;
+  const bottom = inp.getBoundingClientRect().bottom;
   const scTop = sc.getBoundingClientRect().top + 6;
   const limit = keyboardTop() - BAR_H - 10;       // keyboard bar + a little air
   if (top >= scTop && bottom <= limit) return;     // already visible above the keyboard: don't move
@@ -81,6 +100,7 @@ export function initKeyboard(){
     e.preventDefault();
     goNext(t);
   });
+  document.addEventListener('input', e => { if (isField(e.target)) showSuggestions(e.target); });
   let hideTimer = 0;
   document.addEventListener('focusin', e => {
     if (!isField(e.target)) return;
@@ -88,6 +108,7 @@ export function initKeyboard(){
     keepFieldVisible(e.target);
     next.hidden = !nextField(e.target);
     document.getElementById('kb-lbl').textContent = fieldLabel(e.target);
+    showSuggestions(e.target);
     showBar(true);
     placeKbBar();
     setTimeout(placeKbBar, 350);   // after the keyboard animation

@@ -29,7 +29,9 @@ const FILES = [
   './js/ui.js',
   './js/nav.js',
   './js/keyboard.js',
-  './js/suggest.js',
+  './js/idb.js',
+  './js/sync.js',
+  './js/swipe.js',
   './js/files.js',
   './js/screens/projects.js',
   './js/screens/days.js',
@@ -38,7 +40,9 @@ const FILES = [
   './js/screens/take.js',
   './js/screens/export.js',
   './js/screens/settings.js',
-  './js/screens/dictionary.js'
+  './js/screens/dictionary.js',
+  './js/screens/reorder.js',
+  './js/screens/history.js'
 ];
 
 // All files fresh from the server, or null if any of them failed.
