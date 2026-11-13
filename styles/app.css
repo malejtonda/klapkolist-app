@@ -323,9 +323,6 @@ body.kb-open .dock{display:none}
 .take.will-delete,.zblock.will-delete{background:var(--r-0)}
 .take.will-delete::after,.zblock.will-delete::after{color:#fff}
 
-/* a take's notes slide in when it opens */
-.take-body.slide-in{animation:slide-in .2s var(--ease)}
-@keyframes slide-in{from{opacity:0;transform:translateY(-12px);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0)}}
 
 /* Drive indicator in the header */
 .icon-btn.sync{color:var(--ink-50)}
@@ -353,3 +350,19 @@ a.btn{text-decoration:none}
 
 /* Standalone (home screen) app: pad the notch and home bar with the bar colour. */
 :root{padding-top:var(--safe-t);padding-bottom:var(--safe-b);background:var(--bar)}
+
+/* Slovník: one tab per kind, then the list */
+.tabs{position:sticky;top:0;z-index:5;display:flex;gap:6px;margin:0 calc(-1 * var(--gutter));padding:12px var(--gutter);background:var(--bg);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;height:36px;padding:0 12px;display:flex;align-items:center;gap:8px;background:var(--box);color:var(--ink-68);
+  font-size:var(--fs-micro);letter-spacing:var(--track);text-transform:uppercase}
+.tab.on{background:var(--ink);color:var(--bar)}
+.tab-n{opacity:.6;letter-spacing:0}
+.scroll.grain .tabs{background:var(--bg)}
+.dict-hint{padding:6px 0 14px}
+.note-row{display:flex;align-items:stretch;margin-bottom:6px;background:var(--box)}
+.note-text{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:12px 4px 12px 14px;text-align:left;font-size:15px;overflow-wrap:anywhere}
+.note-text span:first-child{flex:1;min-width:0}
+.note-text:active{background:var(--ctl)}
+.note-count{flex-shrink:0;font-size:var(--fs-micro);color:var(--ink-30)}
+.note-x{width:48px;height:auto}
