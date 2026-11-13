@@ -86,6 +86,7 @@ try{
   // ----- notes: opening does not bring up the keyboard -----
   await tap('#list .take-toggle');
   ok(await page.evaluate(() => document.activeElement === document.body), 'opening notes focuses nothing');
+  ok(await page.locator('.take-body.slide-in').count() === 1, 'the notes slide in');
   ok(await page.locator('.take-body .field-in').count() === 4, 'four notes: R, K, Z and skript');
   await page.locator('.take-body .field-in').nth(2).fill('sjedeme wild');
   await page.locator('.take-body .field-in').nth(2).dispatchEvent('change');
@@ -98,8 +99,10 @@ try{
   await tap('[aria-label="Přidat take 2 a otevřít poznámky"]');
   await page.locator('.take-body .field-in').nth(2).focus();
   await shot('quick-notes');
-  ok((await page.locator('#kb-sug .kb-chip').allInnerTexts()).includes('sjedeme wild'), 'earlier note offered above the keyboard');
-  await tap('#kb-sug .kb-chip');
+  ok((await page.locator('.take-body .sug-row .sug-chip').allInnerTexts()).includes('sjedeme wild'), 'earlier note offered right under the field');
+  const chipBelow = await page.evaluate(() => { const i = document.activeElement, r = i.nextElementSibling; return r?.classList.contains('sug-row') && r.getBoundingClientRect().top >= i.getBoundingClientRect().bottom; });
+  ok(chipBelow, 'the chips sit directly below the field being typed in');
+  await tap('.sug-row .sug-chip');
   ok(await page.locator('.take-body .field-in').nth(2).inputValue() === 'sjedeme wild', 'tapping it fills the note');
   await page.evaluate(() => document.activeElement.blur());
   await tap('#list .take.open .take-toggle');
@@ -114,22 +117,41 @@ try{
   await page.evaluate(() => { document.getElementById('list').scrollTop = 0; });
   const row = page.locator('#list .zblock').first().locator('.take:not(.ghost) .take-row').nth(1);
   const box = await row.boundingBox();
-  await page.mouse.move(box.x + 200, box.y + 20); await page.mouse.down();
+  // a short swipe springs back; the wrong direction does nothing
+  await page.mouse.move(box.x + 40, box.y + 20); await page.mouse.down();
+  await page.mouse.move(box.x + 100, box.y + 22, { steps: 4 }); await page.mouse.up();
+  await page.mouse.move(box.x + 300, box.y + 20); await page.mouse.down();
+  await page.mouse.move(box.x + 60, box.y + 22, { steps: 6 }); await page.mouse.up();
+  const takes = () => page.locator('#list .zblock').first().locator('.take:not(.ghost)').count();
+  ok(await takes() === 3, 'a short swipe or one to the left keeps the take');
+  await page.mouse.move(box.x + 40, box.y + 20); await page.mouse.down();
   await page.mouse.move(box.x + 120, box.y + 22, { steps: 4 });
   await shot('swipe');
-  await page.mouse.move(box.x + 40, box.y + 22, { steps: 4 }); await page.mouse.up();
-  const takes = () => page.locator('#list .zblock').first().locator('.take:not(.ghost)').count();
-  ok(await takes() === 2, 'swipe left deletes the take');
+  await page.mouse.move(box.x + 200, box.y + 22, { steps: 4 }); await page.mouse.up();
+  ok(await takes() === 2, 'swipe right deletes the take');
   await shot('undo-toast');
+  const toast = await page.locator('#toast').boundingBox(), dockBox = await page.locator('.dock').boundingBox();
+  ok(toast.y + toast.height <= dockBox.y && toast.y > 844 / 2, 'the message sits just above the + Záběr button');
   await tap('.toast-act');
   ok(await takes() === 3, 'undo brings it back');
   ok((await stored()).projects[0].nds[0].zabery[0].takes[1].zvukNote === 'sjedeme wild', 'with its notes, in its place');
+
+  // ----- swipe a záběr right to delete it, undo -----
+  const zcount = () => page.locator('#list .zblock').count();
+  const zhead = await page.locator('#z-' + (await stored()).projects[0].nds[0].zabery[3].id + ' .z-head').boundingBox();
+  await page.mouse.move(zhead.x + 30, zhead.y + 30); await page.mouse.down();
+  await page.mouse.move(zhead.x + 220, zhead.y + 32, { steps: 8 }); await page.mouse.up();
+  ok(await zcount() === 3, 'swipe right on a záběr deletes it');
+  await tap('.toast-act');
+  ok(await zcount() === 4, 'and undo brings it back');
 
   // ----- number with a letter, and a time -----
   await tap('[aria-label="Záběr 7 | 22, upravit"]');
   await page.fill('[id^="e-s-"]', 'a');
   await page.fill('[id^="e-t-"]', '130');
   await shot('edit');
+  const [del, cancel, save] = await Promise.all(['.z-actions .text-btn', '[aria-label="Zrušit úpravu"]', '[aria-label="Uložit"]'].map(sel => page.locator(sel).boundingBox()));
+  ok(del.x < cancel.x && cancel.x < save.x && save.x + save.width > 330, 'edit: delete on the left, cancel and save on the right');
   await page.locator('[id^="e-t-"]').press('Enter');
   ok(await page.locator('[aria-label="Záběr 7 | 22A, upravit"]').count() === 1, 'záběr 22A');
   ok((await text('.z-time')) === '1:30', '130 typed is shown as 1:30');
@@ -144,11 +166,9 @@ try{
   await shot('cancelled');
   await tap('[aria-label^="Záběr 5 | 13: zrušeno"]');
 
-  // ----- next open, reorder -----
+  // ----- the dock is just + Záběr; reorder -----
+  ok(await page.locator('.dock .btn').count() === 1, 'only + Záběr in the dock');
   await tap('[aria-label^="Záběr 7 | 21: otevřeno"]');
-  await tap('[aria-label="Na další otevřený záběr"]');
-  await page.waitForTimeout(600);
-  ok(await page.locator('.z-num.flash').count() === 1, 'jump to the next open záběr');
   await tap('[aria-label="Možnosti dne"]');
   await shot('day-menu');
   await tap('text=Seřadit záběry');
