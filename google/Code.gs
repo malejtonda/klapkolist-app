@@ -3,11 +3,11 @@
  *
  * This script lives in one Google Sheet in your Drive ("Klapkolist – nastavení"). The Klapkolist
  * app on a phone sends it each shooting day; the script writes it into a Google Sheet per project
- * (one tab per shooting day) in the folder "Klapkolist", and keeps a backup file of each phone's
- * data in "Klapkolist/Zálohy".
+ * (one tab per shooting day) in the folder "Klapkolist", and keeps a backup of each phone's
+ * data in the spreadsheet "Klapkolist – zálohy" in the same folder.
  *
- * Setup is in google/README.md. In short: paste this file into Extensions → Apps Script,
- * Deploy → New deployment → Web app (Execute as: Me, Who has access: Anyone), then reload the
+ * Setup is in google/README.md. In short: paste this file and appsscript.json into
+ * Extensions → Apps Script, Deploy → New deployment → Web app (Execute as: Me, Who has access: Anyone), then reload the
  * sheet and use the "Klapkolist" menu.
  *
  * How the sheets look is decided by the tab "ŠABLONA" in this spreadsheet: row 1 is the header,
@@ -17,7 +17,6 @@
 
 var API = 1;
 var FOLDER = 'Klapkolist';
-var BACKUPS = 'Zálohy';
 var TEMPLATE = 'ŠABLONA';
 var LOCAL_TEMPLATE = '_šablona';
 var ACCESS = 'Telefony';
@@ -190,33 +189,33 @@ function handle_(who, body) {
   return { ok: false, error: 'Neznámý požadavek — aktualizujte skript' };
 }
 
-// ----- Drive folders -----
-function folder_() {
+// ----- Drive: only files this script made itself -----
+// The script asks Google for access to the files it creates (drive.file), never to the rest of
+// your Drive: Google blocks scripts that ask for the whole Drive. So everything goes through the
+// Drive service (Advanced services → Drive API, set up by appsscript.json), not DriveApp.
+var FOLDER_MIME = 'application/vnd.google-apps.folder';
+var SHEET_MIME = 'application/vnd.google-apps.spreadsheet';
+
+function alive_(id) {
+  if (!id) return false;
+  try { return !Drive.Files.get(id, { fields: 'id,trashed' }).trashed; } catch (x) { return false; }
+}
+// A file this script made, remembered under `prop`; made again if it was deleted.
+function made_(prop, meta) {
   var props = PropertiesService.getScriptProperties();
-  var id = props.getProperty('folder');
-  if (id) { try { var f = DriveApp.getFolderById(id); if (!f.isTrashed()) return f; } catch (x) {} }
-  var made = DriveApp.createFolder(FOLDER);
-  props.setProperty('folder', made.getId());
-  return made;
+  var id = props.getProperty(prop);
+  if (alive_(id)) return id;
+  id = Drive.Files.create(meta).id;
+  props.setProperty(prop, id);
+  return id;
 }
-function backupFolder_() {
-  var it = folder_().getFoldersByName(BACKUPS);
-  return it.hasNext() ? it.next() : folder_().createFolder(BACKUPS);
-}
+function folder_() { return made_('folder', { name: FOLDER, mimeType: FOLDER_MIME }); }
 
 // ----- one project = one spreadsheet, one shooting day = one tab -----
 function projectSpreadsheet_(who, project) {
-  var props = PropertiesService.getScriptProperties();
-  var prop = 'ss_' + who.key.slice(0, 8) + '_' + project.id;
   var name = who.owner ? project.name : project.name + ' – ' + who.name;
-  var id = props.getProperty(prop);
-  var ss = null;
-  if (id) { try { if (!DriveApp.getFileById(id).isTrashed()) ss = SpreadsheetApp.openById(id); } catch (x) {} }
-  if (!ss) {
-    ss = SpreadsheetApp.create(name);
-    DriveApp.getFileById(ss.getId()).moveTo(folder_());
-    props.setProperty(prop, ss.getId());
-  }
+  var ss = SpreadsheetApp.openById(made_('ss_' + who.key.slice(0, 8) + '_' + project.id,
+    { name: name, mimeType: SHEET_MIME, parents: [folder_()] }));
   if (ss.getName() !== name) ss.rename(name);
   return ss;
 }
@@ -316,45 +315,61 @@ function writeDay_(who, body) {
   return ss.getUrl();
 }
 
-// ----- backups: the phone's whole data as a file -----
-function backupName_(who, device) { return who.name + ' – ' + String(device).slice(0, 12); }
+// ----- backups: the phone's whole data, in the spreadsheet "Klapkolist – zálohy" -----
+// One row per phone per day, overwritten during the day, so the newest row is the latest state.
+// A cell holds at most 50 000 characters, so the data is split over as many columns as it needs.
+var BACKUP_SHEET = 'Klapkolist – zálohy';
+var CHUNK = 40000;
+
+function backupSheet_() {
+  var ss = SpreadsheetApp.openById(made_('backups', { name: BACKUP_SHEET, mimeType: SHEET_MIME, parents: [folder_()] }));
+  var s = ss.getSheets()[0];
+  if (s.getRange(1, 1).getValue() !== 'Kdy') {
+    s.getRange(1, 1, 1, 5).setValues([['Kdy', 'Kdo', 'Telefon', 'Den', 'Data →']]).setFontWeight('bold');
+    s.setFrozenRows(1);
+  }
+  return s;
+}
+// → [{ row, when, who, device, day }]
+function backupRows_(s) {
+  if (s.getLastRow() < 2) return [];
+  return s.getRange(2, 1, s.getLastRow() - 1, 4).getValues().map(function (r, i) {
+    return { row: i + 2, when: new Date(r[0]).getTime(), who: String(r[1]), device: String(r[2]), day: String(r[3]) };
+  });
+}
 
 function saveBackup_(who, body) {
-  var dir = backupFolder_();
-  var base = backupName_(who, body.device);
-  var latest = base + '.json';
-  var it = dir.getFilesByName(latest);
-  if (it.hasNext()) it.next().setContent(body.json);
-  else dir.createFile(latest, body.json, 'application/json');
-  // one dated copy per day, the last two weeks kept
-  var today = base + ' ' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd') + '.json';
-  var dated = dir.getFilesByName(today);
-  if (dated.hasNext()) dated.next().setContent(body.json);
-  else dir.createFile(today, body.json, 'application/json');
-  var old = [];
-  var all = dir.getFiles();
-  while (all.hasNext()) {
-    var f = all.next();
-    if (f.getName().indexOf(base + ' ') === 0) old.push(f);
-  }
-  old.sort(function (a, b) { return b.getName().localeCompare(a.getName()); });
-  old.slice(KEEP_DAILY_BACKUPS).forEach(function (f) { f.setTrashed(true); });
+  var s = backupSheet_();
+  var device = String(body.device).slice(0, 12);
+  var day = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var chunks = [];
+  for (var i = 0; i < body.json.length; i += CHUNK) chunks.push(body.json.slice(i, i + CHUNK));
+  var mine = backupRows_(s).filter(function (r) { return r.who === who.name && r.device === device; });
+  var today = mine.filter(function (r) { return r.day === day; })[0];
+  var row = today ? today.row : s.getLastRow() + 1;
+  if (s.getMaxColumns() < 4 + chunks.length) s.insertColumnsAfter(s.getMaxColumns(), 4 + chunks.length - s.getMaxColumns());
+  s.getRange(row, 1, 1, s.getMaxColumns()).clearContent();
+  s.getRange(row, 1, 1, 4 + chunks.length).setNumberFormat('@')
+    .setValues([[new Date().toISOString(), who.name, device, day].concat(chunks)]);
+  // keep the last two weeks of days for this phone
+  mine.sort(function (a, b) { return b.day.localeCompare(a.day); });
+  mine.filter(function (r) { return r.day !== day; }).slice(KEEP_DAILY_BACKUPS - 1)
+    .map(function (r) { return r.row; }).sort(function (a, b) { return b - a; })
+    .forEach(function (r) { s.deleteRow(r); });
 }
 
 function listBackups_(who) {
-  var out = [];
-  var all = backupFolder_().getFiles();
-  while (all.hasNext()) {
-    var f = all.next();
-    if (f.getName().indexOf(who.name + ' – ') === 0) out.push({ id: f.getId(), name: f.getName().replace(/\.json$/, ''), when: f.getLastUpdated().getTime() });
-  }
-  out.sort(function (a, b) { return b.when - a.when; });
-  return out.slice(0, 30);
+  return backupRows_(backupSheet_())
+    .filter(function (r) { return r.who === who.name; })
+    .sort(function (a, b) { return b.when - a.when; })
+    .slice(0, 30)
+    .map(function (r) { return { id: r.device + '|' + r.day, name: who.name + ' – ' + r.day, when: r.when }; });
 }
 
 function readBackup_(who, id) {
-  var f = DriveApp.getFileById(id);
-  var inFolder = f.getParents().hasNext() && f.getParents().next().getId() === backupFolder_().getId();
-  if (!inFolder || f.getName().indexOf(who.name + ' – ') !== 0) throw new Error('Záloha nenalezena');
-  return f.getBlob().getDataAsString('UTF-8');
+  var s = backupSheet_();
+  var parts = String(id).split('|');
+  var r = backupRows_(s).filter(function (x) { return x.who === who.name && x.device === parts[0] && x.day === parts[1]; })[0];
+  if (!r) throw new Error('Záloha nenalezena');
+  return s.getRange(r.row, 5, 1, s.getMaxColumns() - 4).getValues()[0].join('');
 }

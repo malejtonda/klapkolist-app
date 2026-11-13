@@ -11,6 +11,11 @@ Do this on a computer, signed in to the Google account whose Drive should hold t
 1. Create a new Google Sheet and name it **Klapkolist – nastavení**.
 2. In its menu choose **Extensions → Apps Script**.
 3. Delete what is in the editor, paste the whole of [`Code.gs`](Code.gs), and save (the disk icon).
+4. Click the gear (**Project Settings**) on the left and tick
+   **Show "appsscript.json" manifest file in editor**.
+5. Back in the editor (the `< >` icon), open **appsscript.json**, replace everything in it with
+   [`appsscript.json`](appsscript.json), and save. This file tells Google exactly what the script
+   may touch: your spreadsheets and the files the script creates itself, nothing else in your Drive.
 
 ## 2. Deploy the script
 
@@ -19,7 +24,9 @@ Do this on a computer, signed in to the Google account whose Drive should hold t
 3. Set **Execute as: Me** and **Who has access: Anyone**, then **Deploy**.
 4. Google asks you to authorise the script. Because you wrote it yourself (well, pasted it), Google
    shows "Google hasn't verified this app": click **Advanced → Go to … (unsafe)** and **Allow**.
-   The script only ever touches files it creates itself and this settings sheet.
+   If instead you get **"This app is blocked"** with no Advanced link, the script is still asking
+   for your whole Drive: check step 5 of part 1 (the appsscript.json must be the one from here),
+   then deploy again.
 5. Copy the **Web app URL** (it ends in `/exec`).
 
 "Anyone" does not mean anyone can use it: every request must carry one of the codes you hand out.
@@ -66,7 +73,7 @@ the last column.
   Google Sheets are overwritten. Mark the day **Dokončit den** in the app and the tab is sent one
   last time and then left alone, so you can edit it in Sheets.
 - Deleting a day or project in the app does not delete anything in Drive.
-- Backups are in **Klapkolist/Zálohy**: the latest state per phone, plus one file per day for the
-  last two weeks. Restore one in the app under **Nastavení → Obnovit ze zálohy na Drive**.
+- Backups are in the spreadsheet **Klapkolist – zálohy** in the Klapkolist folder: one row per phone
+  per day for the last two weeks (the data is long, so it is split over many columns). Restore one in the app under **Nastavení → Obnovit ze zálohy na Drive**.
 - After changing `Code.gs` later: **Deploy → Manage deployments → edit (pencil) → Version: New
   version → Deploy**. The URL and the codes stay the same.
