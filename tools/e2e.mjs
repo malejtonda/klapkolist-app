@@ -166,11 +166,9 @@ try{
   await shot('cancelled');
   await tap('[aria-label^="Záběr 5 | 13: zrušeno"]');
 
-  // ----- next open, reorder -----
+  // ----- the dock is just + Záběr; reorder -----
+  ok(await page.locator('.dock .btn').count() === 1, 'only + Záběr in the dock');
   await tap('[aria-label^="Záběr 7 | 21: otevřeno"]');
-  await tap('[aria-label="Na další otevřený záběr"]');
-  await page.waitForTimeout(600);
-  ok(await page.locator('.z-num.flash').count() === 1, 'jump to the next open záběr');
   await tap('[aria-label="Možnosti dne"]');
   await shot('day-menu');
   await tap('text=Seřadit záběry');

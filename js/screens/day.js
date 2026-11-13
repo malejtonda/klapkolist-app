@@ -3,7 +3,7 @@
 // plus the map and the done count in the header.
 import { el, icon, showToast, undoToast, reducedMotion, blurIfInside, focusPending } from '../dom.js';
 import { STATUS_LABEL, zState, isLocked, cycleStatus, ndStats, zLabel, zNumber, findZaber, zaberOfTake, compareZ, hasBest,
-  addZaberAfterLast, removeZaber, nextOpenZaber, parseTime, formatTime } from '../model.js';
+  addZaberAfterLast, removeZaber, parseTime, formatTime } from '../model.js';
 import { data, findDay, save } from '../store.js';
 import { navigate, goBack, refresh } from '../nav.js';
 import { renderApp, header, openMenu, showDialog, syncButton } from '../ui.js';
@@ -73,7 +73,6 @@ export function screenDay(projectId, ndId){
         el('button', { className: 'btn btn-line', onClick: reopen }, 'Znovu otevřít'))
     : el('div', { className: 'dock' + (some ? '' : ' dock-wrap') },
         some ? null : el('button', { className: 'btn btn-line btn-wide', onClick: () => navigate(screenImport, projectId, ndId) }, 'Import ze Sheets'),
-        some ? el('button', { className: 'btn btn-line btn-sq', 'aria-label': 'Na další otevřený záběr', title: 'Na další otevřený záběr', onClick: jumpToNextOpen }, icon('next')) : null,
         el('button', { className: 'btn btn-primary btn-grow', onClick: addZaber }, '+ Záběr'));
 
   renderApp(head, list, dock);
@@ -113,13 +112,6 @@ function jumpTo(z){
   const num = block.querySelector('.z-num');
   num.classList.remove('flash'); void num.offsetWidth; num.classList.add('flash');
   clearTimeout(num._t); num._t = setTimeout(() => num.classList.remove('flash'), 1200);
-}
-// From the záběr at the top of the screen to the next one still open.
-function jumpToNextOpen(){
-  const list = document.getElementById('list');
-  const top = [...list.querySelectorAll('.zblock')].find(b => b.offsetTop + b.offsetHeight > list.scrollTop + 12);
-  const next = nextOpenZaber(view.nd, top?.id.slice(2));
-  if (next) jumpTo(next); else showToast('Žádný další otevřený záběr');
 }
 
 // One tap: next number in the same obraz, no dialog. Tap the number to change it.

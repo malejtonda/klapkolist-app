@@ -26,7 +26,6 @@ const ICONS = {
   tick: '<path d="M5 12.5l4.5 4.5L19 7"/>',
   cross: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
   dots: '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
-  next: '<path d="M6 5l6 6 6-6M6 13l6 6 6-6"/>',
   grip: '<path d="M5 8h14M5 12h14M5 16h14"/>',
   cloud: '<path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6 9.5 4.3 4.3 0 0 0 7 18z"/>',
   cloudOk: '<path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6 9.5 4.3 4.3 0 0 0 7 18z"/><path d="M9 13l2.2 2.2L15 11.5"/>',

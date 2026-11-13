@@ -105,12 +105,6 @@ export function addZaberAfterLast(nd){
   nd.zabery.push(z);
   return z;
 }
-// The first open záběr after this one (wrapping round), or null when none is open.
-export function nextOpenZaber(nd, afterId){
-  const i = nd.zabery.findIndex(z => z.id === afterId);
-  const order = [...nd.zabery.slice(i + 1), ...nd.zabery.slice(0, i + 1)];
-  return order.find(z => zState(z) === 'open' && z.id !== afterId) || null;
-}
 export function moveZaber(nd, from, to){
   if (from === to || from < 0 || to < 0 || from >= nd.zabery.length || to >= nd.zabery.length) return;
   nd.zabery.splice(to, 0, nd.zabery.splice(from, 1)[0]);

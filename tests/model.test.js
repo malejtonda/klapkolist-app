@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalize, VERSION, cycleStatus, isLocked, ndStats, addZaberAfterLast, nextOpenZaber, moveZaber, newZaber,
+import { normalize, VERSION, cycleStatus, isLocked, ndStats, addZaberAfterLast, moveZaber, newZaber,
   addTake, addNoteRow, removeTake, removeZaber, nextTakeNumber, takeHasData, hasBest, parseZNumber, zLabel, compareZ,
   parseTime, formatTime, rememberNote, noteSuggestions, addToDict, dictValues } from '../js/model.js';
 import { plural, fold } from '../js/util.js';
@@ -39,15 +39,6 @@ test('quick add takes the next free number in the last obraz', () => {
   assert.deepEqual([1, 2, 3, 4].map(() => addZaberAfterLast(nd).zaber), [2, 3, 4, 7]);
   const empty = { zabery: [] };
   assert.equal(zLabel(addZaberAfterLast(empty)), '1 | 1');
-});
-
-test('next open záběr wraps round and skips done and cancelled', () => {
-  const [a, b, c, d] = [{}, { status: 'done' }, { status: 'cancelled' }, {}].map((x, i) => Object.assign(newZaber(1, i + 1), x));
-  const nd = { zabery: [a, b, c, d] };
-  assert.equal(nextOpenZaber(nd, a.id), d);
-  assert.equal(nextOpenZaber(nd, d.id), a);
-  assert.equal(nextOpenZaber(nd, undefined), a);
-  assert.equal(nextOpenZaber({ zabery: [a, b] }, a.id), null);
 });
 
 test('reordering and undoable deletes', () => {
