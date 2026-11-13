@@ -14,6 +14,12 @@
   --ink-50:rgba(255,255,255,.5);
   --ink-30:rgba(255,255,255,.3);
   --accent:#F92E1E;
+  /* ratings, worst to best: the colours of the dropdowns in the Google Sheet */
+  --r-0:#b10202; --r-0-ink:#ffffff;
+  --r-1:#ffc8aa; --r-1-ink:#753800;
+  --r-2:#ffe5a0; --r-2-ink:#473821;
+  --r-3:#d4edbc; --r-3-ink:#11734b;
+  --r-4:#11734b; --r-4-ink:#ffffff;
   --mono:'Roboto Mono',ui-monospace,Menlo,monospace;
   --display:'Stack Sans Headline','Arial Narrow',Helvetica,sans-serif;
   --fs-micro:12px;
@@ -82,7 +88,8 @@ button{background:none;border:0;cursor:pointer;touch-action:manipulation;-webkit
   background:var(--box);color:var(--ink-30);
   text-decoration:line-through;
 }
-.cell.has-star::after{content:'';position:absolute;top:0;right:0;width:7px;height:7px;background:var(--accent)}
+.cell.has-best::after{content:'';position:absolute;top:0;right:0;width:7px;height:7px;background:var(--r-4)}
+.map-time{margin-top:12px;text-align:right}
 
 /* ===== Scrolling list ===== */
 .scroll{
@@ -114,19 +121,18 @@ button{background:none;border:0;cursor:pointer;touch-action:manipulation;-webkit
 /* done = locked: only the box colour changes */
 .zblock.locked{background:#1d1d1d}
 /* a cancelled záběr sinks back into the page */
-.zblock.cancelled{background:transparent;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 6px,transparent 6px 12px);padding-bottom:0}
+.zblock.cancelled{background:transparent;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 6px,transparent 6px 12px)}
+.zblock.cancelled .take{opacity:.45}
 .zblock.cancelled .z-num{color:var(--ink-30);text-decoration:line-through;text-decoration-thickness:2px}
 .z-edit{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px;padding:12px 0}
-.z-edit .field{width:76px}
+.z-edit .field{width:64px}
+.z-time{font-size:var(--fs-label);color:var(--ink-50);padding:10px 4px}
 .z-edit .actions{display:flex;gap:8px}
 .z-edit .text-btn{margin-left:auto}
 
 /* take */
 .take.open{background:var(--ctl);margin:0 -12px;padding:0 12px 4px}
 .take-row{display:flex;align-items:center;min-height:54px;gap:4px}
-.star{width:40px;height:48px;margin-left:-10px;display:flex;align-items:center;justify-content:center;color:var(--ink-30);flex-shrink:0}
-.star.on{color:var(--accent)}
-.star.on svg{fill:currentColor}
 .take-toggle{flex:1;min-width:0;height:54px;display:flex;align-items:center;gap:10px;text-align:left}
 .take-num{font-size:var(--fs-body);font-weight:600;flex-shrink:0;white-space:nowrap}
 .chev{margin-left:auto;color:var(--ink-30);width:16px;height:16px;transition:transform .25s var(--ease);flex-shrink:0}
@@ -138,7 +144,6 @@ button{background:none;border:0;cursor:pointer;touch-action:manipulation;-webkit
 }
 .take.open .chip{background:var(--ctl-2)}
 .chip:active{background:var(--ctl-2)}
-.chip.on,.take.open .chip.on{background:var(--signed);color:var(--bar)}
 /* this department left a note: thick bar along the bottom of its button */
 .chip.note::after{content:'';position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--ink)}
 
@@ -168,18 +173,11 @@ button{background:none;border:0;cursor:pointer;touch-action:manipulation;-webkit
 .text-btn:active{color:var(--ink)}
 .prop-add{display:flex;gap:8px;align-items:flex-end}
 .ac{position:relative;flex:1;min-width:0}
-.ac-list{position:absolute;top:100%;left:0;right:0;z-index:20;background:var(--bar);max-height:176px;overflow-y:auto;display:none}
-.ac-list.show{display:block}
-.ac-item{display:block;width:100%;text-align:left;padding:0 12px;min-height:44px;font-size:14px}
-.ac-item:active{background:var(--ctl)}
-.note-sug{background:var(--ctl-2);z-index:30;box-shadow:0 10px 24px rgba(0,0,0,.45)}
-.note-sug .ac-item:active{background:var(--signed);color:var(--bar)}
-.note-sug .ac-item{color:var(--ink)}
 .sq-btn{width:42px;height:42px;background:var(--ctl-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
 .sq-btn.fill{background:var(--ink);color:var(--bar)}
 
 /* ghost = the next take, faint until you tap something on it */
-.take.ghost .star,.take.ghost .take-num{opacity:.38}
+.take.ghost .take-num{opacity:.38}
 .take.ghost .chip{background:transparent;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 3px,transparent 3px 6px);color:var(--ink-30)}
 
 /* ===== Plain list rows (projects, days, settings): filled boxes ===== */
@@ -269,7 +267,11 @@ textarea.mono:focus{outline:none;background:var(--ctl)}
   background:var(--ctl-2);padding:12px 14px;
   font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;
   opacity:0;transform:translateY(-6px);transition:opacity .2s,transform .2s var(--ease);pointer-events:none;
+  display:flex;align-items:center;gap:12px;
 }
+.toast span{flex:1;min-width:0}
+.toast.has-act{pointer-events:auto;padding:4px 4px 4px 14px}
+.toast-act{flex-shrink:0;min-height:40px;padding:0 14px;background:var(--ink);color:var(--bar);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .toast.show{opacity:1;transform:none}
 
 /* ===== Keyboard bar: sits on top of the iPhone keyboard, like Obsidian's ===== */
@@ -280,11 +282,75 @@ textarea.mono:focus{outline:none;background:var(--ctl)}
 }
 .kbbar[hidden],.kb-hide[hidden]{display:none}
 .kbbar .lbl{margin-right:auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* earlier entries for the focused field, one tap each; they take the label's place */
+.kb-sug{display:none;flex:1;min-width:0;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.kb-sug::-webkit-scrollbar{display:none}
+.kbbar.has-sug .kb-sug{display:flex}
+.kbbar.has-sug .lbl{display:none}
+.kb-chip{flex-shrink:0;max-width:60vw;height:32px;padding:0 10px;background:var(--ctl-2);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kb-chip:active{background:var(--signed);color:var(--bar)}
 .kb-hide{height:44px;padding:0 12px;display:flex;align-items:center;gap:10px;font-size:var(--fs-micro);letter-spacing:var(--track);text-transform:uppercase;color:var(--ink)}
 .kb-hide:active{color:var(--ink-50)}
 body.kb-open .dock{display:none}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+
+/* ===== Ratings: PP / P- / P / P+ / BEREME ===== */
+.chip.r-0,.pick.r-0.on{background:var(--r-0);color:var(--r-0-ink)}
+.chip.r-1,.pick.r-1.on{background:var(--r-1);color:var(--r-1-ink)}
+.chip.r-2,.pick.r-2.on{background:var(--r-2);color:var(--r-2-ink)}
+.chip.r-3,.pick.r-3.on{background:var(--r-3);color:var(--r-3-ink)}
+.chip.r-4,.pick.r-4.on{background:var(--r-4);color:var(--r-4-ink)}
+.chip[class*="r-"]{font-size:var(--fs-micro)}
+.chip[aria-expanded="true"]{outline:2px solid var(--ink);outline-offset:1px}
+/* the note bar has to show on any rating colour */
+.chip[class*="r-"].note::after{background:currentColor}
+.take.picking{background:var(--ctl);margin:0 -12px;padding:0 12px}
+.picker{display:flex;align-items:center;gap:6px;padding:2px 0 12px}
+.picker-who{width:22px;flex-shrink:0;font-weight:700;color:var(--ink-50)}
+.pick{flex:1;height:48px;border-bottom:5px solid;font-size:var(--fs-label);font-weight:700;background:var(--ctl-2);color:var(--ink)}
+.pick.r-0{border-color:var(--r-0)} .pick.r-1{border-color:var(--r-1)} .pick.r-2{border-color:var(--r-2)}
+.pick.r-3{border-color:var(--r-3)} .pick.r-4{border-color:var(--r-4)}
+
+/* a row without a take number, the skript-note mark, "+ pozn." on the faint row */
+.take-num.loose{font-style:italic;font-weight:400;color:var(--ink-68)}
+.take-s{font-size:11px;font-weight:700;color:var(--ink-50);padding:1px 5px;background:var(--ctl-2)}
+.ghost-note{flex-shrink:0;height:40px;padding:0 10px;margin-right:4px;font-size:var(--fs-micro);letter-spacing:.06em;color:var(--ink-30)}
+.ghost-note:active{color:var(--ink)}
+
+/* swipe a take left to delete it */
+.take-row{touch-action:pan-y}
+.take.swiping{position:relative;background:var(--ctl-2);overflow:hidden}
+.take.swiping::after{content:attr(data-del);position:absolute;right:16px;top:0;height:54px;display:flex;align-items:center;
+  font-size:var(--fs-micro);letter-spacing:var(--track);text-transform:uppercase;color:var(--ink-50)}
+.take.swiping .take-row{position:relative;z-index:1;background:var(--box)}
+.take.will-delete{background:var(--r-0)}
+.take.will-delete::after{color:#fff}
+
+/* Drive indicator in the header */
+.icon-btn.sync{color:var(--ink-50)}
+.icon-btn.sync-off{color:var(--ink-30)}
+.icon-btn.sync-pending,.icon-btn.sync-offline{color:var(--r-2)}
+.icon-btn.sync-error{color:var(--accent)}
+
+/* finished day */
+.dock-note{flex:1;align-self:center}
+
+/* drag to reorder */
+.sort-list{display:flex;flex-direction:column;gap:8px}
+.sort-row{display:flex;align-items:center;gap:14px;min-height:52px;padding-right:14px;background:var(--box)}
+.sort-row.cancelled .sort-num{color:var(--ink-30);text-decoration:line-through}
+.sort-row.dragging{position:relative;z-index:5;background:var(--ctl-2);box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.sort-grip{width:52px;height:52px;display:flex;align-items:center;justify-content:center;color:var(--ink-50);touch-action:none;cursor:grab}
+.sort-grip .ico{width:20px;height:20px}
+.sort-num{font-size:20px;line-height:1;flex:1}
+.sort-row .row-meta{margin:0}
+
+/* list inside a dialog */
+.pick-list{max-height:50vh;overflow-y:auto;margin-top:6px}
+.pick-list .row-link{background:var(--ctl)}
+a.btn{text-decoration:none}
 
 /* Standalone (home screen) app: pad the notch and home bar with the bar colour. */
 :root{padding-top:var(--safe-t);padding-bottom:var(--safe-b);background:var(--bar)}

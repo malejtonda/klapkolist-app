@@ -1,8 +1,8 @@
 import { iconBtn } from '../dom.js';
 import { uid } from '../util.js';
-import { data, save } from '../store.js';
+import { data, save, snapshotNow } from '../store.js';
 import { navigate, refresh } from '../nav.js';
-import { renderApp, header, scrollArea, sectionLabel, dock, primaryButton, itemRow, promptDialog, confirmDelete } from '../ui.js';
+import { renderApp, header, scrollArea, sectionLabel, dock, primaryButton, itemRow, promptDialog, confirmDelete, syncButton } from '../ui.js';
 import { screenDays } from './days.js';
 import { screenSettings } from './settings.js';
 
@@ -15,8 +15,8 @@ export function screenProjects(){
       side: `${p.nds.length} ND`,
       onOpen: () => navigate(screenDays, p.id),
       onRename: () => promptDialog('Přejmenovat projekt', 'Nový název', name => { if (!name) return; p.name = name; save(); refresh(); }, p.name),
-      onDelete: () => confirmDelete('Smazat projekt?', `„${p.name}“ se smaže se všemi natáčecími dny a taky. Vrátit to nejde.`,
-        () => { data.projects = data.projects.filter(x => x !== p); save(); refresh(); })
+      onDelete: () => confirmDelete('Smazat projekt?', `„${p.name}“ se smaže se všemi natáčecími dny a taky. Vrátit jde jen ze Starších verzí v Nastavení.`,
+        async () => { await snapshotNow(); data.projects = data.projects.filter(x => x !== p); save(); refresh(); })
     })));
   }
   const add = primaryButton('+ Nový projekt', () => promptDialog('Nový projekt', 'Název projektu', name => {
@@ -26,5 +26,5 @@ export function screenProjects(){
     save();
     navigate(screenDays, p.id);   // straight into the new project
   }));
-  renderApp(header('Klapkolist', { actions: [iconBtn('settings', 'Nastavení', () => navigate(screenSettings))] }), content, dock(add));
+  renderApp(header('Klapkolist', { actions: [syncButton(), iconBtn('settings', 'Nastavení', () => navigate(screenSettings))] }), content, dock(add));
 }
