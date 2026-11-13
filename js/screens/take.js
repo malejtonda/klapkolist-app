@@ -37,11 +37,12 @@ export function renderTake(t, z){
       'aria-label': `${name}, ${d.name}: ${rated(t, d)?.name || 'nehodnoceno'}${hasNote(t, d) ? ', má poznámku' : ''}`,
       onClick: guard(z, () => { view.rating = picking === d.key ? null : { takeId: t.id, dept: d.key }; rerenderZ(z); })
     }))));
-  if (!locked(z)) swipeToDelete(row, () => deleteTake(t, z));
-  return el('div', { className: 'take' + (open ? ' open' : '') + (picking ? ' picking' : ''), id: 't-' + t.id, 'data-del': 'Smazat' },
+  const take = el('div', { className: 'take' + (open ? ' open' : '') + (picking ? ' picking' : ''), id: 't-' + t.id, 'data-del': 'Smazat' },
     row,
     picking ? renderPicker(t, z, DEPTS.find(d => d.key === picking)) : null,
     open ? (locked(z) ? renderBodyReadOnly(t) : renderBody(t, z)) : null);
+  if (!locked(z)) swipeToDelete(row, take, () => deleteTake(t, z));
+  return take;
 }
 
 // Five big buttons under the take. Picking moves on to the next department that has no rating yet.

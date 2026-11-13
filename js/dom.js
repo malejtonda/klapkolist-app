@@ -32,7 +32,6 @@ const ICONS = {
   cloudOk: '<path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6 9.5 4.3 4.3 0 0 0 7 18z"/><path d="M9 13l2.2 2.2L15 11.5"/>',
   cloudUp: '<path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6 9.5 4.3 4.3 0 0 0 7 18z"/><path d="M12 16v-5M9.8 13l2.2-2.2 2.2 2.2"/>',
   cloudOff: '<path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6 9.5 4.3 4.3 0 0 0 7 18z"/><path d="M4 4l16 17"/>',
-  kbdown: '<rect x="3" y="4" width="18" height="11"/><path d="M7 8h1M11 8h2M16 8h1M8 11.5h8M9 18.5l3 2.5 3-2.5"/>'
 };
 export function icon(name, cls = ''){
   const s = el('span', { className: 'ico ' + cls, 'aria-hidden': 'true' });

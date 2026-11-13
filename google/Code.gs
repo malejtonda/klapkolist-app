@@ -26,6 +26,7 @@ var RATING_COLS = [4, 6, 8];
 var DAY_KEY = 'klapkolist_nd';
 var CODE_PREFIX = 'KLAPKA1.';
 var KEEP_DAILY_BACKUPS = 14;
+var FONT = 'Roboto Mono';
 
 // ===================================================================
 // Menu (runs as you, inside the settings sheet)
@@ -114,6 +115,7 @@ function accessSheet_() { return home_().getSheetByName(ACCESS); }
 function buildTemplate_(ss) {
   var s = ss.insertSheet(TEMPLATE);
   var n = HEADER.length;
+  s.getRange(1, 1, 3, n).setFontFamily(FONT);
   s.getRange(1, 1, 1, n).setValues([HEADER])
     .setBackground('#000000').setFontColor('#ffffff').setFontWeight('bold').setHorizontalAlignment('center');
   var body = s.getRange(2, 1, 2, n);
@@ -253,7 +255,7 @@ function writeDay_(who, body) {
   var ss = projectSpreadsheet_(who, body.project);
   var table = body.table;
   var sheet = findDaySheet_(ss, body.day.id);
-  var tpl = localTemplate_(ss, !sheet);          // a new tab picks up the current ŠABLONA
+  var tpl = localTemplate_(ss, true);            // every send picks up the current ŠABLONA
   if (!sheet) {
     sheet = tpl.copyTo(ss);
     sheet.showSheet();

@@ -8,6 +8,7 @@ import { data, findDay, save } from '../store.js';
 import { navigate, goBack, refresh } from '../nav.js';
 import { renderApp, header, openMenu, showDialog, syncButton } from '../ui.js';
 import { syncKbBar } from '../keyboard.js';
+import { swipeToDelete } from '../swipe.js';
 import { sheetUrl, syncNow } from '../sync.js';
 import { screenImport } from './import.js';
 import { screenExport } from './export.js';
@@ -157,17 +158,27 @@ function renderZBlock(z){
     block.appendChild(renderZEdit(z));
   } else {
     const edit = guard(z, () => { view.editZId = z.id; rerenderZ(z); });
-    block.appendChild(el('div', { className: 'z-head' },
+    const head = block.appendChild(el('div', { className: 'z-head' },
       el('button', { className: 'z-num display tnum', 'aria-label': `Záběr ${zLabel(z)}, upravit`, onClick: edit },
         el('span', null, '' + z.obraz), el('span', { className: 'z-sep', 'aria-hidden': 'true' }, '|'), el('span', null, zNumber(z))),
       data.settings.times && z.time != null ? el('button', { className: 'z-time tnum', 'aria-label': `Čas ${formatTime(z.time)}, upravit`, onClick: edit }, formatTime(z.time)) : null,
       el('button', { className: 'z-stat ' + st, 'aria-label': `Záběr ${zLabel(z)}: ${STATUS_LABEL[st]}. Klepnutím změníte stav.`, title: STATUS_LABEL[st],
         onClick: () => view.nd.finished ? guard(z)() : cycleZaber(z) },
         st === 'done' ? icon('tick') : st === 'cancelled' ? icon('cross') : null)));
+    block.dataset.del = 'Smazat záběr';
+    if (!view.nd.finished) swipeToDelete(head, block, () => deleteZaber(z));
   }
   z.takes.forEach(t => block.appendChild(renderTake(t, z)));
   if (!locked(z)) block.appendChild(renderGhost(z));   // done or cancelled: no new takes
   return block;
+}
+
+// Removed at once; the toast offers the way back.
+function deleteZaber(z){
+  const undo = removeZaber(view.nd, z);
+  if (view.editZId === z.id) view.editZId = null;
+  save(); refresh();
+  undoToast(`Záběr ${zLabel(z)} smazán`, () => { undo(); save(); refresh(); });
 }
 
 function cycleZaber(z){
@@ -208,17 +219,12 @@ function renderZEdit(z){
     view.editZId = null;
     commitZ(z);
   };
-  const remove = () => {
-    const undo = removeZaber(nd, z);
-    view.editZId = null; save(); refresh();
-    undoToast(`Záběr ${zLabel(z)} smazán`, () => { undo(); save(); refresh(); });
-  };
   const group = el('div', { className: 'z-edit', 'data-fieldgroup': '' },
-    obraz.box, zaber.box, suffix.box, time?.box,
-    el('div', { className: 'actions' },
-      el('button', { className: 'sq-btn fill', 'aria-label': 'Uložit', onClick: saveEdit }, '✓'),
-      el('button', { className: 'sq-btn', 'aria-label': 'Zrušit úpravu', onClick: close }, '×')),
-    el('button', { className: 'text-btn', onClick: remove }, icon('trash'), el('span', { className: 'u' }, 'Smazat záběr')));
+    el('div', { className: 'z-fields' }, obraz.box, zaber.box, suffix.box, time?.box),
+    el('div', { className: 'z-actions' },
+      el('button', { className: 'text-btn', onClick: () => deleteZaber(z) }, icon('trash'), el('span', { className: 'u' }, 'Smazat záběr')),
+      el('button', { className: 'sq-btn', 'aria-label': 'Zrušit úpravu', onClick: close }, '×'),
+      el('button', { className: 'sq-btn fill', 'aria-label': 'Uložit', onClick: saveEdit }, '✓')));
   group.addEventListener('fieldgroupdone', e => { e.preventDefault(); saveEdit(); });
   group.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
   return group;
@@ -239,6 +245,8 @@ export function toggleTake(t, z, forceOpen = false){
   const row = document.querySelector(`#t-${t.id} .take-row`);
   if (before != null) list.scrollTop += row.getBoundingClientRect().top - before;
   const body = document.getElementById('tb-' + t.id);
-  if (body && body.getBoundingClientRect().bottom > list.getBoundingClientRect().bottom)
+  if (!body) return;
+  body.classList.add('slide-in');      // only on opening, not on every redraw of the take
+  if (body.getBoundingClientRect().bottom > list.getBoundingClientRect().bottom)
     list.scrollTop += row.getBoundingClientRect().top - list.getBoundingClientRect().top - 6;
 }

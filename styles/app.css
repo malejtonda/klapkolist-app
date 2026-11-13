@@ -124,11 +124,13 @@ button{background:none;border:0;cursor:pointer;touch-action:manipulation;-webkit
 .zblock.cancelled{background:transparent;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 6px,transparent 6px 12px)}
 .zblock.cancelled .take{opacity:.45}
 .zblock.cancelled .z-num{color:var(--ink-30);text-decoration:line-through;text-decoration-thickness:2px}
-.z-edit{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px;padding:12px 0}
+.z-edit{display:flex;flex-direction:column;gap:12px;padding:12px 0}
+.z-fields{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px}
+/* delete on the left, cancel and save on the right, where the thumb is */
+.z-actions{display:flex;align-items:center;gap:8px}
+.z-actions .text-btn{margin-right:auto;align-self:center}
 .z-edit .field{width:64px}
 .z-time{font-size:var(--fs-label);color:var(--ink-50);padding:10px 4px}
-.z-edit .actions{display:flex;gap:8px}
-.z-edit .text-btn{margin-left:auto}
 
 /* take */
 .take.open{background:var(--ctl);margin:0 -12px;padding:0 12px 4px}
@@ -263,37 +265,26 @@ textarea.mono:focus{outline:none;background:var(--ctl)}
 
 /* ===== Toast ===== */
 .toast{
-  position:fixed;left:var(--gutter);right:var(--gutter);top:calc(var(--safe-t) + 52px);z-index:300;
+  position:fixed;left:var(--gutter);right:var(--gutter);bottom:calc(var(--safe-b) + 84px);z-index:300;
   background:var(--ctl-2);padding:12px 14px;
   font-size:var(--fs-micro);letter-spacing:.08em;text-transform:uppercase;
-  opacity:0;transform:translateY(-6px);transition:opacity .2s,transform .2s var(--ease);pointer-events:none;
+  opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s var(--ease);pointer-events:none;
   display:flex;align-items:center;gap:12px;
 }
 .toast span{flex:1;min-width:0}
 .toast.has-act{pointer-events:auto;padding:4px 4px 4px 14px}
 .toast-act{flex-shrink:0;min-height:40px;padding:0 14px;background:var(--ink);color:var(--bar);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .toast.show{opacity:1;transform:none}
+body.kb-open .toast{bottom:auto;top:calc(var(--safe-t) + 52px)}
 
-/* ===== Keyboard bar: sits on top of the iPhone keyboard, like Obsidian's ===== */
-.kbbar{
-  position:fixed;left:0;right:0;bottom:0;z-index:250;height:44px;
-  background:var(--bar);display:flex;align-items:center;justify-content:flex-end;padding:0 6px 0 var(--gutter);
-  will-change:transform;
-}
-.kbbar[hidden],.kb-hide[hidden]{display:none}
-.kbbar .lbl{margin-right:auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* earlier entries for the focused field, one tap each; they take the label's place */
-.kb-sug{display:none;flex:1;min-width:0;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.kb-sug::-webkit-scrollbar{display:none}
-.kbbar.has-sug .kb-sug{display:flex}
-.kbbar.has-sug .lbl{display:none}
-.kb-chip{flex-shrink:0;max-width:60vw;height:32px;padding:0 10px;background:var(--ctl-2);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kb-chip:active{background:var(--signed);color:var(--bar)}
-.kb-hide{height:44px;padding:0 12px;display:flex;align-items:center;gap:10px;font-size:var(--fs-micro);letter-spacing:var(--track);text-transform:uppercase;color:var(--ink)}
-.kb-hide:active{color:var(--ink-50)}
+/* ===== Earlier entries under the field being typed in ===== */
+.sug-row{display:flex;gap:6px;margin-top:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.sug-row::-webkit-scrollbar{display:none}
+.sug-chip{flex-shrink:0;max-width:70vw;height:36px;padding:0 12px;background:var(--ctl-2);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sug-chip:active{background:var(--signed);color:var(--bar)}
 body.kb-open .dock{display:none}
 
-@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 
 
 /* ===== Ratings: PP / P- / P / P+ / BEREME ===== */
@@ -319,14 +310,22 @@ body.kb-open .dock{display:none}
 .ghost-note{flex-shrink:0;height:40px;padding:0 10px;margin-right:4px;font-size:var(--fs-micro);letter-spacing:.06em;color:var(--ink-30)}
 .ghost-note:active{color:var(--ink)}
 
-/* swipe a take left to delete it */
-.take-row{touch-action:pan-y}
-.take.swiping{position:relative;background:var(--ctl-2);overflow:hidden}
-.take.swiping::after{content:attr(data-del);position:absolute;right:16px;top:0;height:54px;display:flex;align-items:center;
+/* swipe a take or a záběr to the right to delete it: red underneath, the label on the left */
+.take-row,.z-head{touch-action:pan-y}
+.take.swiping,.zblock.swiping{position:relative;overflow:hidden}
+.take.swiping{background:var(--ctl-2)}
+.take.swiping::after,.zblock.swiping::after{content:attr(data-del);position:absolute;left:16px;top:0;display:flex;align-items:center;
   font-size:var(--fs-micro);letter-spacing:var(--track);text-transform:uppercase;color:var(--ink-50)}
+.take.swiping::after{height:54px}
+.zblock.swiping::after{height:60px}
 .take.swiping .take-row{position:relative;z-index:1;background:var(--box)}
-.take.will-delete{background:var(--r-0)}
-.take.will-delete::after{color:#fff}
+.zblock.swiping .z-head{position:relative;z-index:1;background:var(--box)}
+.take.will-delete,.zblock.will-delete{background:var(--r-0)}
+.take.will-delete::after,.zblock.will-delete::after{color:#fff}
+
+/* a take's notes slide in when it opens */
+.take-body.slide-in{animation:slide-in .2s var(--ease)}
+@keyframes slide-in{from{opacity:0;transform:translateY(-12px);clip-path:inset(0 0 100% 0)}to{opacity:1;transform:none;clip-path:inset(0)}}
 
 /* Drive indicator in the header */
 .icon-btn.sync{color:var(--ink-50)}
