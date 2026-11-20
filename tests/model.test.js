@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalize, VERSION, cycleStatus, isLocked, ndStats, addZaberAfterLast, moveZaber, newZaber,
   addTake, addNoteRow, removeTake, removeZaber, nextTakeNumber, takeHasData, hasBest, parseZNumber, zLabel, compareZ,
-  parseTime, formatTime, rememberNote, noteSuggestions, addToDict, dictValues } from '../js/model.js';
+  parseTime, formatTime, rememberNote, noteSuggestions, renameNote, forgetNote, addNote, sortedNotes, addToDict, dictValues } from '../js/model.js';
 import { plural, fold } from '../js/util.js';
 
 test('status cycles open → done → cancelled → open; only an open záběr of an open day can change', () => {
@@ -101,6 +101,23 @@ test('remembered notes: the most used come first, no duplicates ignoring case an
   assert.deepEqual(noteSuggestions(h, 'rezie', ''), ['auto', 'Zaostreni', 'letadlo']);
   assert.deepEqual(noteSuggestions(h, 'rezie', 'ZAOST'), ['Zaostreni']);
   assert.deepEqual(noteSuggestions(h, 'rezie', 'auto'), [], 'an exact match is not offered again');
+});
+
+test('remembered notes can be fixed, merged, removed and put back, and added by hand', () => {
+  const h = { kamera: [{ text: 'ostrost', count: 3 }, { text: 'neostre', count: 1 }, { text: 'Šum', count: 2 }] };
+  assert.equal(renameNote(h, 'kamera', 'neostre', '  neostré '), true);
+  assert.deepEqual(h.kamera.map(x => x.text), ['ostrost', 'neostré', 'Šum']);
+  assert.equal(renameNote(h, 'kamera', 'neostré', 'OSTROST'), true, 'renamed onto an existing one');
+  assert.deepEqual(h.kamera, [{ text: 'ostrost', count: 4 }, { text: 'Šum', count: 2 }]);
+  assert.equal(renameNote(h, 'kamera', 'ostrost', '  '), false, 'empty is not a rename');
+  const undo = forgetNote(h, 'kamera', 'ostrost');
+  assert.deepEqual(h.kamera.map(x => x.text), ['Šum']);
+  undo();
+  assert.deepEqual(h.kamera.map(x => x.text), ['ostrost', 'Šum']);
+  assert.equal(addNote(h, 'kamera', 'Ostrost'), false, 'already there');
+  assert.equal(addNote(h, 'kamera', 'c-stand v záběru'), true);
+  assert.deepEqual(noteSuggestions(h, 'kamera', ''), ['ostrost', 'Šum', 'c-stand v záběru'], 'used ones first');
+  assert.deepEqual(sortedNotes(h, 'kamera').map(x => x.text), ['c-stand v záběru', 'ostrost', 'Šum'], 'Czech alphabet: Š after O');
 });
 
 test('dictionary keys are case-insensitive, values unique', () => {

@@ -1,5 +1,6 @@
 import { el, icon, showToast } from '../dom.js';
 import { plural } from '../util.js';
+import { NOTES } from '../model.js';
 import { data, save, replaceData, backupJSON } from '../store.js';
 import { navigate, navReset, refresh } from '../nav.js';
 import { renderApp, header, scrollArea, sectionLabel, showDialog, promptDialog } from '../ui.js';
@@ -28,7 +29,7 @@ export function screenSettings(){
     row('Uložit zálohu do souboru', 'Všechna data jako soubor .json', () =>
       saveFile(`klapkolist_${new Date().toISOString().slice(0, 10)}.json`, backupJSON(), 'application/json')),
     restoreFromFileRow(),
-    row('Slovník vlastností', `${Object.keys(data.dictionary).length} vlastností v nabídce`, () => navigate(screenDictionary), arrow()));
+    row('Slovník', `${Object.keys(data.dictionary).length} vlastností · ${NOTES.reduce((a, n) => a + data.noteHistory[n.key].length, 0)} poznámek — upravit, co se nabízí při psaní`, () => navigate(screenDictionary), arrow()));
   renderApp(header('Nastavení', { back: true }), content);
 }
 

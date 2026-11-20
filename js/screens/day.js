@@ -1,7 +1,7 @@
 // The shooting day: the shot map on top, then every záběr with its takes.
 // Changes re-render only the záběr they touch (so the list doesn't jump and the keyboard stays up),
 // plus the map and the done count in the header.
-import { el, icon, showToast, undoToast, reducedMotion, blurIfInside, focusPending } from '../dom.js';
+import { el, icon, showToast, undoToast, reducedMotion, animateHeight, blurIfInside, focusPending } from '../dom.js';
 import { STATUS_LABEL, zState, isLocked, cycleStatus, ndStats, zLabel, zNumber, findZaber, zaberOfTake, compareZ, hasBest,
   addZaberAfterLast, removeZaber, parseTime, formatTime } from '../model.js';
 import { data, findDay, save } from '../store.js';
@@ -222,23 +222,42 @@ function renderZEdit(z){
   return group;
 }
 
-// Open or close a take's notes without moving the list: the row you tapped stays where it was.
-// Only when the opened notes would end up below the screen is the take brought to the top.
+// Open or close a take's notes. The notes fold open and shut (whatever is below glides along),
+// and the row you tapped stays where it was. Only when the opened notes would end up below the
+// screen does the list glide up to bring the take to the top.
+// A tap while one is still moving finishes that one at once, then acts: taps are never lost.
+const OPEN_MS = 340, CLOSE_MS = 240;
+let queue = Promise.resolve(), waiting = 0;
 export function toggleTake(t, z, forceOpen = false){
+  waiting++;
+  document.querySelectorAll('.take-body').forEach(b => b.getAnimations().forEach(a => a.finish()));
+  queue = queue.then(() => { waiting--; return runToggle(t, z, forceOpen); }).catch(() => {});
+  return queue;
+}
+const ms = d => waiting ? 0 : d;     // another tap is already waiting: no time for animating
+async function runToggle(t, z, forceOpen){
   const list = document.getElementById('list');
-  const before = document.querySelector(`#t-${t.id} .take-row`)?.getBoundingClientRect().top;
   const prev = view.openTakeId;
-  view.openTakeId = prev === t.id && !forceOpen ? null : t.id;
+  const opening = !(prev === t.id && !forceOpen);
+  // whatever is open now folds shut first
+  if (prev && !(forceOpen && prev === t.id)){
+    const old = document.getElementById('tb-' + prev);
+    blurIfInside(old || list);
+    await animateHeight(old, false, ms(CLOSE_MS));
+  }
+  const before = document.querySelector(`#t-${t.id} .take-row`)?.getBoundingClientRect().top;
+  view.openTakeId = opening ? t.id : null;
   view.propAdd = {};
-
-  if (prev && prev !== t.id){ const pz = zaberOfTake(view.nd, prev); if (pz && pz !== z) rerenderZ(pz); }   // close the previous take
+  if (prev && prev !== t.id){ const pz = zaberOfTake(view.nd, prev); if (pz && pz !== z) rerenderZ(pz); }
   rerenderZ(z);
 
   const row = document.querySelector(`#t-${t.id} .take-row`);
   if (before != null) list.scrollTop += row.getBoundingClientRect().top - before;
-  const body = document.getElementById('tb-' + t.id);
+  const body = opening && document.getElementById('tb-' + t.id);
   if (!body) return;
-  body.classList.add('slide-in');      // only on opening, not on every redraw of the take
-  if (body.getBoundingClientRect().bottom > list.getBoundingClientRect().bottom)
-    list.scrollTop += row.getBoundingClientRect().top - list.getBoundingClientRect().top - 6;
+  const overflow = body.getBoundingClientRect().bottom - list.getBoundingClientRect().bottom;
+  const top = list.scrollTop + row.getBoundingClientRect().top - list.getBoundingClientRect().top - 6;
+  const unfold = animateHeight(body, true, ms(OPEN_MS));
+  if (overflow > 0) list.scrollTo({ top, behavior: reducedMotion() ? 'auto' : 'smooth' });
+  await unfold;
 }

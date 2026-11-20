@@ -180,6 +180,36 @@ export function rememberNote(history, key, text){
   if (list.length > 80) list.length = 80;
   return true;
 }
+// Fixing a remembered note (a typo, a better wording). If it now reads like another one, the two
+// become one. Notes already written on takes stay as they are.
+export function renameNote(history, key, oldText, newText){
+  const list = history[key], v = (newText || '').trim();
+  const i = list.findIndex(x => x.text === oldText);
+  if (i < 0 || !v) return false;
+  const j = list.findIndex((x, k) => k !== i && fold(x.text) === fold(v));
+  if (j >= 0){ list[j].count += list[i].count; list.splice(i, 1); }
+  else list[i].text = v;
+  return true;
+}
+// Removes a remembered note; returns a function that puts it back (for undo).
+export function forgetNote(history, key, text){
+  const list = history[key], i = list.findIndex(x => x.text === text);
+  if (i < 0) return () => {};
+  const [gone] = list.splice(i, 1);
+  return () => { list.splice(Math.min(i, list.length), 0, gone); };
+}
+// Typed straight into the slovník: offered like any other, but behind the ones used on takes.
+export function addNote(history, key, text){
+  const v = (text || '').trim();
+  if (!v || history[key].some(x => fold(x.text) === fold(v))) return false;
+  history[key].push({ text: v, count: 0 });
+  return true;
+}
+// For browsing: alphabetical, the Czech way.
+export function sortedNotes(history, key){
+  return [...history[key]].sort((a, b) => a.text.localeCompare(b.text, 'cs', { sensitivity: 'base' }));
+}
+
 // The notes to offer: most used first (recent first among equals), filtered by what is typed.
 export function noteSuggestions(history, key, query, max = 12){
   const q = fold(query || '');

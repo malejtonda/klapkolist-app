@@ -85,8 +85,11 @@ try{
 
   // ----- notes: opening does not bring up the keyboard -----
   await tap('#list .take-toggle');
+  const unfolding = await page.evaluate(() => document.getAnimations().some(a => a.effect?.target?.classList.contains('take-body')));
+  ok(unfolding, 'the notes unfold (height animation)');
+  await page.waitForTimeout(450);
   ok(await page.evaluate(() => document.activeElement === document.body), 'opening notes focuses nothing');
-  ok(await page.locator('.take-body.slide-in').count() === 1, 'the notes slide in');
+  ok(await page.evaluate(() => getComputedStyle(document.querySelector('.take-body')).overflow !== 'hidden'), 'and end fully open');
   ok(await page.locator('.take-body .field-in').count() === 4, 'four notes: R, K, Z and skript');
   await page.locator('.take-body .field-in').nth(2).fill('sjedeme wild');
   await page.locator('.take-body .field-in').nth(2).dispatchEvent('change');
@@ -114,6 +117,7 @@ try{
 
   // ----- swipe to delete, and undo -----
   await tap('#list .take.open .take-toggle');
+  await page.waitForTimeout(400);                 // let it fold shut
   await page.evaluate(() => { document.getElementById('list').scrollTop = 0; });
   const row = page.locator('#list .zblock').first().locator('.take:not(.ghost) .take-row').nth(1);
   const box = await row.boundingBox();
@@ -196,6 +200,24 @@ try{
   await tap('[aria-label="Zpět"]'); await tap('[aria-label="Zpět"]');
   await tap('[aria-label="Nastavení"]');
   await shot('settings');
+  await tap('text=Slovník');
+  await tap('.tab >> text=Zvuk');
+  ok((await page.locator('.note-text').allInnerTexts()).some(t => t.includes('sjedeme wild')), 'Slovník lists the Zvuk notes');
+  await tap('[aria-label="Upravit: sjedeme wild"]');
+  await page.fill('.dialog input', 'sjedeme wild zvlášť');
+  await page.keyboard.press('Enter');
+  ok(await page.locator('[aria-label="Upravit: sjedeme wild zvlášť"]').count() === 1, 'a note can be reworded');
+  await tap('.tab >> text=Kamera');
+  await tap('text=+ Poznámka');
+  await page.fill('.dialog input', 'c-stand v záběru');
+  await page.keyboard.press('Enter');
+  await shot('slovnik');
+  await tap('[aria-label="Odebrat c-stand v záběru"]');
+  ok(await page.locator('.note-row').count() === 0, 'and removed');
+  await tap('.toast-act');
+  ok(await page.locator('.note-row').count() === 1, 'and put back');
+  ok((await stored()).noteHistory.zvuk.some(x => x.text === 'sjedeme wild zvlášť'), 'the change is saved');
+  await tap('[aria-label="Zpět"]');
   await tap('text=Připojit Google Drive');
   await page.fill('.dialog input', code);
   await page.keyboard.press('Enter');

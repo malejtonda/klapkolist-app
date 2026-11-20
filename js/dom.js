@@ -54,6 +54,18 @@ export function undoToast(msg, undo){ showToast(msg, { action: { label: 'Vrátit
 
 export function reducedMotion(){ return matchMedia('(prefers-reduced-motion: reduce)').matches; }
 
+// Grow a box from nothing to its full height (or shrink it away), so what is below glides
+// instead of jumping. Resolves when done; at once when the phone asks for less motion.
+export function animateHeight(node, open, ms){
+  if (!node || !ms || reducedMotion() || !node.animate) return Promise.resolve();
+  const cs = getComputedStyle(node);
+  const full = { height: node.offsetHeight + 'px', paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, opacity: 1 };
+  const none = { height: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: 0 };
+  node.style.overflow = 'hidden';
+  const a = node.animate(open ? [none, full] : [full, none], { duration: ms, easing: 'cubic-bezier(.33,0,.2,1)' });
+  return a.finished.catch(() => {}).then(() => { node.style.overflow = ''; });
+}
+
 // Before a node is removed from the page, move focus out of it, so the keyboard closes cleanly.
 export function blurIfInside(node){ const a = document.activeElement; if (a && a !== document.body && node.contains(a)) a.blur(); }
 
